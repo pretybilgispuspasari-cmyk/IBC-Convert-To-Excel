@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Excel Converter multi-Bank</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 400px; }
+        .drop-zone { border: 2px dashed #107c41; padding: 20px; border-radius: 8px; background: #f0fdf4; cursor: pointer; margin-bottom: 15px; }
+        .select-bank { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 20px; font-size: 14px; }
+        .btn { background: #107c41; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn:disabled { background: #ccc; }
+        #status { margin-top: 15px; font-size: 14px; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>PDF ke Excel Converter</h2>
+        <form id="uploadForm">
+            <!-- Pilihan Bank -->
+            <select id="bankSelect" name="bank" class="select-bank">
+                <option value="bca">Bank BCA</option>
+                <option value="bni">Bank BNI</option>
+                <option value="jatim">Bank Jatim</option>
+                <option value="umum">Bank Lain / Umum</option>
+            </select>
+
+            <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+                <p id="label">Klik di sini untuk memilih file PDF</p>
+                <input type="file" id="fileInput" name="file" accept=".pdf" hidden onchange="showFileName()">
+            </div>
+            <button type="submit" id="submitBtn" class="btn" disabled>Konversi & Download</button>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const label = document.getElementById('label');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('uploadForm');
+        const status = document.getElementById('status');
+
+        function showFileName() {
+            if (fileInput.files.length > 0) {
+                label.innerHTML = "<b>Selected:</b> " + fileInput.files[0].name;
+                submitBtn.disabled = false;
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            status.innerText = "Sedang mengonversi PDF ke Excel...";
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('bank', document.getElementById('bankSelect').value);
+
+            try {
+                const res = await fetch('/convert', { method: 'POST', body: formData });
+                if (!res.ok) {
+                    const errorMsg = await res.text();
+                    throw new Error(errorMsg);
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "hasil_konversi.xlsx";
+                a.click();
+                status.innerText = "Selesai! File berhasil diunduh.";
+            } catch (err) {
+                status.innerText = "Error: " + err.message;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
